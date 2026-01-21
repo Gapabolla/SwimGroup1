@@ -32,9 +32,9 @@
         
         iframe {
             width: 100%;
-            height: 85vh;
+            height: calc(85vh - 60px); /* Уменьшаем высоту под заголовок */
             border: none;
-            border-radius: 12px;
+            border-radius: 0 0 12px 12px;
         }
         
         .loading {
@@ -50,6 +50,25 @@
             margin-bottom: 10px;
             padding: 8px;
         }
+        
+        /* Стили для заголовка */
+        .table-header {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            padding: 15px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .table-container-wrapper {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -63,9 +82,16 @@
         📄 Отправить квитанцию
     </a>
     
-    <!-- Таблица -->
-    <div id="table-container">
-        <div class="loading">Загрузка таблицы...</div>
+    <!-- Контейнер с заголовком и таблицей -->
+    <div class="table-container-wrapper">
+        <div class="table-header">
+            📊 Посещение
+        </div>
+        
+        <!-- Таблица -->
+        <div id="table-container">
+            <div class="loading">Загрузка таблицы...</div>
+        </div>
     </div>
 
     <script>
