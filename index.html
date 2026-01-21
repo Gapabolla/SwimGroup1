@@ -4,26 +4,141 @@
     <meta charset="utf-8">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 10px; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
-        iframe { width: 100%; height: 80vh; border: none; }
-        .admin-btn { display: none; background: #0088cc; color: white; padding: 10px; text-decoration: none; border-radius: 8px; text-align: center; margin-bottom: 10px; }
+        body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            padding: 10px; 
+            background: var(--tg-theme-bg-color); 
+            color: var(--tg-theme-text-color); 
+        }
+        .admin-btn { 
+            display: none; 
+            background: #0088cc; 
+            color: white; 
+            padding: 10px; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin-bottom: 10px; 
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid var(--tg-theme-hint-color, #ddd);
+            padding: 8px 10px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--tg-theme-secondary-bg-color, #f2f2f2);
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: var(--tg-theme-secondary-bg-color, #f9f9f9);
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--tg-theme-hint-color);
+        }
+        .error {
+            color: #ff4444;
+            padding: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <!-- Ссылка для вас, чтобы быстро перейти к редактированию -->
     <a id="editBtn" href="ССЫЛКА_НА_ВАШУ_ТАБЛИЦУ_ДЛЯ_РЕДАКТИРОВАНИЯ" class="admin-btn">Редактировать таблицу</a>
-
-    <!-- Отображение таблицы для всех -->
-    <iframe src="https://docs.google.com/spreadsheets/d/1013rhkCZ-xFHPzWgrB-RICCkJkXYhOq-wZPBUZUzTV8/edit?usp=drivesdk"></iframe>
+    
+    <div id="table-container"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         const MY_ID = 517194795;
+        
+        // URL вашего Google Sheets в формате CSV (публичный доступ)
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1013rhkCZ-xFHPzWgrB-RICCkJkXYhOq-wZPBUZUzTV8/edit?usp=sharing';
 
+        function renderTable(csvData) {
+            const rows = csvData.trim().split('\n');
+            let html = '<table>';
+            
+            rows.forEach((row, rowIndex) => {
+                const cells = row.split(',').map(cell => 
+                    cell.replace(/^"(.*)"$/, '$1').trim()
+                );
+                
+                if (rowIndex === 0) {
+                    // Заголовок таблицы
+                    html += '<thead><tr>';
+                    cells.forEach(cell => {
+                        html += `<th>${cell}</th>`;
+                    });
+                    html += '</tr></thead><tbody>';
+                } else {
+                    // Строки данных
+                    html += '<tr>';
+                    cells.forEach(cell => {
+                        html += `<td>${cell}</td>`;
+                    });
+                    html += '</tr>';
+                }
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('table-container').innerHTML = html;
+        }
+
+        async function loadTableData() {
+            const container = document.getElementById('table-container');
+            container.innerHTML = '<div class="loading">Загрузка данных...</div>';
+            
+            try {
+                // Используем CORS прокси если нужно (GitHub Pages может блокировать запросы)
+                const proxyUrl = 'https://corsproxy.io/?';
+                const response = await fetch(proxyUrl + encodeURIComponent(SHEET_URL));
+                
+                if (!response.ok) throw new Error(`Ошибка загрузки: ${response.status}`);
+                
+                const csvText = await response.text();
+                renderTable(csvText);
+            } catch (error) {
+                console.error('Ошибка:', error);
+                container.innerHTML = '<div class="error">Не удалось загрузить таблицу. Проверьте доступность данных.</div>';
+            }
+        }
+
+        // Проверка прав администратора
         if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === MY_ID) {
             document.getElementById('editBtn').style.display = 'block';
         }
+        
+        // Загружаем таблицу
+        loadTableData();
+        
+        // Обновляем данные каждые 30 секунд
+        setInterval(loadTableData, 30000);
+        
         tg.expand();
+        
+        // Добавляем обработчик обновления свайпом вниз
+        let startY;
+        document.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            const endY = e.changedTouches[0].clientY;
+            if (startY - endY > 100) { // Свайп вниз > 100px
+                loadTableData();
+            }
+        });
     </script>
 </body>
 </html>
