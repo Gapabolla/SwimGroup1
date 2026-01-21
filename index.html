@@ -1,640 +1,109 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Таблица в Telegram</title>
+    <meta charset="utf-8">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Стили остаются такими же как в предыдущем варианте */
-        :root {
-            --primary-color: #0088cc;
-            --border-color: #e0e0e0;
-            --hover-bg: rgba(0, 136, 204, 0.05);
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 16px;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            line-height: 1.4;
-            font-size: 14px;
-        }
-        
-        .header {
-            margin-bottom: 20px;
+            padding: 10px;
+            background: #ffffff;
+            color: #000000;
         }
         
         .admin-btn {
             display: none;
-            background: var(--primary-color);
+            background: #0088cc;
             color: white;
-            padding: 12px 20px;
+            padding: 10px;
             text-decoration: none;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 16px;
-            font-weight: 500;
-            transition: opacity 0.2s;
-        }
-        
-        .admin-btn:hover {
-            opacity: 0.9;
-        }
-        
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            gap: 12px;
-        }
-        
-        .refresh-btn {
-            background: var(--tg-theme-button-color, var(--primary-color));
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            padding: 10px 16px;
             border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            flex: 1;
-            transition: background 0.2s;
-        }
-        
-        .refresh-btn:hover {
-            background: #0077b3;
-        }
-        
-        .refresh-btn:active {
-            transform: scale(0.98);
-        }
-        
-        .last-update {
-            font-size: 12px;
-            color: var(--tg-theme-hint-color, #888888);
-            text-align: right;
-            flex: 1;
-        }
-        
-        .table-container {
-            overflow-x: auto;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
-            margin-bottom: 20px;
-            max-height: 70vh;
-            overflow-y: auto;
-            position: relative;
+            text-align: center;
+            margin-bottom: 10px;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 500px;
-        }
-        
-        thead {
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
         
         th {
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            font-weight: 600;
-            padding: 16px 12px;
+            background: #f0f0f0;
+            padding: 12px 8px;
             text-align: left;
-            border-bottom: 2px solid var(--border-color);
-            font-size: 14px;
-            white-space: nowrap;
+            border-bottom: 2px solid #ddd;
+            position: sticky;
+            top: 0;
         }
         
         td {
-            padding: 14px 12px;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--tg-theme-bg-color, #ffffff);
-            word-break: break-word;
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
         }
         
-        tr:last-child td {
-            border-bottom: none;
-        }
-        
-        tr:hover td {
-            background: var(--hover-bg);
+        tr:hover {
+            background: #f9f9f9;
         }
         
         .loading {
-            padding: 60px 20px;
             text-align: center;
-            color: var(--tg-theme-hint-color, #888888);
-        }
-        
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 136, 204, 0.3);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .error {
-            padding: 40px 20px;
-            text-align: center;
-            color: #dc3545;
-            background: rgba(220, 53, 69, 0.05);
-            border-radius: 12px;
-            margin: 20px 0;
-            border: 1px solid rgba(220, 53, 69, 0.2);
-        }
-        
-        .stats {
-            text-align: center;
-            font-size: 12px;
-            color: var(--tg-theme-hint-color, #888888);
-            padding: 12px;
-            border-top: 1px solid var(--border-color);
-            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
-        }
-        
-        a {
-            color: var(--primary-color);
-            text-decoration: none;
-            word-break: break-all;
-        }
-        
-        a:hover {
-            text-decoration: underline;
-        }
-        
-        @media (max-width: 600px) {
-            body {
-                padding: 12px;
-                font-size: 13px;
-            }
-            
-            th, td {
-                padding: 12px 8px;
-            }
-            
-            .controls {
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .refresh-btn, .last-update {
-                width: 100%;
-                text-align: center;
-            }
-        }
-        
-        .config-panel {
-            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border-color);
-        }
-        
-        .config-input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-        }
-        
-        .test-data-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 10px;
+            padding: 40px;
+            color: #666;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <a id="editBtn" href="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" class="admin-btn">
-            ✏️ Редактировать таблицу
-        </a>
-        
-        <!-- Панель конфигурации (видна только вам) -->
-        <div id="configPanel" class="config-panel" style="display: none;">
-            <h3 style="margin-top: 0;">Настройки подключения</h3>
-            <input type="text" id="sheetIdInput" class="config-input" placeholder="Google Sheets ID">
-            <input type="text" id="apiKeyInput" class="config-input" placeholder="Google API Key">
-            <input type="text" id="sheetNameInput" class="config-input" placeholder="Имя листа (Sheet1)">
-            <button onclick="saveConfig()" class="refresh-btn">💾 Сохранить настройки</button>
-            <button onclick="testWithSampleData()" class="test-data-btn">🧪 Тест с примером данных</button>
-            <button onclick="testConnection()" class="refresh-btn">🔗 Проверить подключение</button>
-        </div>
-        
-        <div class="controls">
-            <button onclick="loadTableData()" class="refresh-btn" id="refreshBtn">
-                <span id="refreshText">🔄 Обновить</span>
-            </button>
-            <div class="last-update" id="lastUpdate">
-                Загрузка...
-            </div>
-        </div>
-    </div>
+    <a id="editBtn" href="#" class="admin-btn">✏️ Редактировать таблицу</a>
     
-    <div class="table-container" id="tableContainer">
-        <div class="loading" id="loading">
-            <span class="loading-spinner"></span> Загрузка данных...
-        </div>
+    <div id="table-container">
+        <div class="loading">Загрузка таблицы...</div>
     </div>
-    
-    <div class="stats" id="stats"></div>
 
     <script>
-        // === КОНФИГУРАЦИЯ ===
-        let CONFIG = {
-            SHEET_ID: localStorage.getItem('https://docs.google.com/spreadsheets/d/1013rhkCZ-xFHPzWgrB-RICCkJkXYhOq-wZPBUZUzTV8/edit?usp=sharing') || '',
-            API_KEY: localStorage.getItem('AIzaSyDd9JykitTR1w7mtbN5iT6vvyOL18VxjSM') || '',
-            SHEET_NAME: localStorage.getItem('sheet_name') || 'Sheet1',
-            ADMIN_ID: 517194795, // Ваш Telegram ID
-            USE_CORS_PROXY: true, // Использовать CORS прокси
-            AUTO_REFRESH: 60
-        };
+        // === ПРОСТАЯ НАСТРОЙКА ===
+        const SHEET_ID = 'ВСТАВЬТЕ_СЮДА_ID_ТАБЛИЦЫ';
+        const ADMIN_ID = 123456789; // Ваш Telegram ID
         
-        // Инициализация Telegram Web App
+        // Инициализация Telegram
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.ready();
         
-        let isLoading = false;
-        let lastLoaded = null;
-        
-        // Сохранение конфигурации
-        function saveConfig() {
-            CONFIG.SHEET_ID = document.getElementById('sheetIdInput').value.trim();
-            CONFIG.API_KEY = document.getElementById('apiKeyInput').value.trim();
-            CONFIG.SHEET_NAME = document.getElementById('sheetNameInput').value.trim() || 'Sheet1';
+        // Загружаем таблицу
+        function loadTable() {
+            // Google Sheets URL для публичного доступа
+            const url = `https://docs.google.com/spreadsheets/d/1013rhkCZ-xFHPzWgrB-RICCkJkXYhOq-wZPBUZUzTV8/edit?usp=sharing`;
             
-            localStorage.setItem('sheet_id', CONFIG.SHEET_ID);
-            localStorage.setItem('api_key', CONFIG.API_KEY);
-            localStorage.setItem('sheet_name', CONFIG.SHEET_NAME);
-            
-            alert('Настройки сохранены!');
-            loadTableData();
-        }
-        
-        // Тестовые данные
-        function testWithSampleData() {
-            const sampleData = {
-                values: [
-                    ['Имя', 'Возраст', 'Город', 'Телефон'],
-                    ['Анна Петрова', '25', 'Москва', '+7 999 123-45-67'],
-                    ['Иван Сидоров', '30', 'Санкт-Петербург', '+7 999 765-43-21'],
-                    ['Мария Иванова', '28', 'Казань', '+7 999 888-77-66'],
-                    ['Алексей Кузнецов', '35', 'Новосибирск', '+7 999 555-44-33'],
-                    ['Елена Смирнова', '22', 'Екатеринбург', '+7 999 222-11-00']
-                ]
-            };
-            
-            renderTable(sampleData.values);
-            updateLastUpdateTime();
-            document.getElementById('stats').textContent = 
-                `Тестовые данные: ${sampleData.values.length - 1} строк, ${sampleData.values[0].length} колонок`;
-            setLoading(false);
-        }
-        
-        // Проверка подключения
-        async function testConnection() {
-            if (!CONFIG.SHEET_ID || !CONFIG.API_KEY) {
-                alert('Введите SHEET_ID и API_KEY');
-                return;
-            }
-            
-            setLoading(true);
-            const testUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}?key=${CONFIG.API_KEY}&fields=properties.title`;
-            
-            try {
-                const response = await fetchWithRetry(testUrl);
-                const data = await response.json();
-                alert(`✅ Подключение успешно!\nНазвание таблицы: ${data.properties.title}`);
-            } catch (error) {
-                alert(`❌ Ошибка подключения:\n${error.message}`);
-            } finally {
-                setLoading(false);
-            }
-        }
-        
-        // Функция fetch с повторными попытками и CORS прокси
-        async function fetchWithRetry(url, retries = 3) {
-            const proxies = [
-                '', // Прямой запрос
-                'https://corsproxy.io/?', 
-                'https://api.codetabs.com/v1/proxy?quest=',
-                'https://thingproxy.freeboard.io/fetch/'
-            ];
-            
-            for (let attempt = 0; attempt < retries; attempt++) {
-                for (const proxy of proxies) {
-                    try {
-                        const proxyUrl = proxy + encodeURIComponent(url);
-                        console.log(`Попытка ${attempt + 1}, прокси: ${proxy || 'нет'}`);
-                        
-                        const response = await fetch(proxyUrl, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                            },
-                            mode: 'cors'
-                        });
-                        
-                        if (response.ok) {
-                            console.log('Успешно через:', proxy || 'прямое подключение');
-                            return response;
-                        }
-                    } catch (error) {
-                        console.warn(`Ошибка с прокси ${proxy}:`, error.message);
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    // Вырезаем только таблицу из ответа
+                    const tableMatch = html.match(/<table[^>]*>[\s\S]*?<\/table>/i);
+                    if (tableMatch) {
+                        document.getElementById('table-container').innerHTML = tableMatch[0];
+                    } else {
+                        document.getElementById('table-container').innerHTML = 
+                            '<div class="loading">Не удалось загрузить таблицу</div>';
                     }
-                }
-                
-                if (attempt < retries - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
-                }
-            }
-            
-            throw new Error('Не удалось подключиться после всех попыток');
-        }
-        
-        // Метод 2: Использование JSON feed (старый метод, не требует API ключа)
-        async function loadViaJSONFeed() {
-            const jsonUrl = `https://spreadsheets.google.com/feeds/list/${CONFIG.SHEET_ID}/od6/public/values?alt=json`;
-            
-            try {
-                const response = await fetchWithRetry(jsonUrl);
-                const data = await response.json();
-                
-                if (!data.feed || !data.feed.entry) {
-                    throw new Error('Некорректный формат данных');
-                }
-                
-                // Преобразуем JSON в массив
-                const rows = [];
-                
-                // Получаем заголовки
-                const firstEntry = data.feed.entry[0];
-                const headers = [];
-                
-                for (let key in firstEntry) {
-                    if (key.startsWith('gsx$')) {
-                        const headerName = key.replace('gsx$', '').replace(/-/g, ' ');
-                        headers.push(headerName);
-                    }
-                }
-                
-                rows.push(headers);
-                
-                // Получаем данные
-                data.feed.entry.forEach(entry => {
-                    const row = [];
-                    for (let key in entry) {
-                        if (key.startsWith('gsx$')) {
-                            row.push(entry[key].$t || '');
-                        }
-                    }
-                    rows.push(row);
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    document.getElementById('table-container').innerHTML = 
+                        '<div class="loading">Ошибка загрузки. Проверьте ID таблицы</div>';
                 });
-                
-                return rows;
-            } catch (error) {
-                console.error('Ошибка JSON feed:', error);
-                throw error;
-            }
         }
         
-        // Метод 3: Использование CSV экспорта
-        async function loadViaCSV() {
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv`;
-            
-            try {
-                const response = await fetchWithRetry(csvUrl);
-                const csvText = await response.text();
-                
-                // Парсим CSV
-                const rows = [];
-                const lines = csvText.split('\n');
-                
-                lines.forEach(line => {
-                    if (line.trim()) {
-                        // Простой парсинг CSV (для сложных случаев нужна библиотека)
-                        const cells = line.split(',').map(cell => {
-                            return cell.replace(/^"(.*)"$/, '$1').trim();
-                        });
-                        rows.push(cells);
-                    }
-                });
-                
-                return rows;
-            } catch (error) {
-                console.error('Ошибка CSV:', error);
-                throw error;
-            }
+        // Проверяем админа
+        if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === ADMIN_ID) {
+            document.getElementById('editBtn').style.display = 'block';
+            document.getElementById('editBtn').href = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
         }
         
-        // Основная функция загрузки
-        async function loadTableData() {
-            if (isLoading) return;
-            setLoading(true);
-            
-            try {
-                let rows;
-                
-                // Пробуем разные методы
-                if (CONFIG.API_KEY && CONFIG.SHEET_ID) {
-                    console.log('Попытка через Google Sheets API...');
-                    const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${CONFIG.SHEET_NAME}?key=${CONFIG.API_KEY}`;
-                    const response = await fetchWithRetry(apiUrl);
-                    const data = await response.json();
-                    rows = data.values;
-                } else if (CONFIG.SHEET_ID) {
-                    console.log('Попытка через JSON feed...');
-                    rows = await loadViaJSONFeed();
-                } else {
-                    throw new Error('Не указан SHEET_ID');
-                }
-                
-                if (!rows || rows.length === 0) {
-                    throw new Error('Таблица пуста');
-                }
-                
-                renderTable(rows);
-                updateLastUpdateTime();
-                document.getElementById('stats').textContent = 
-                    `Загружено: ${rows.length - 1} строк, ${rows[0].length} колонок`;
-                
-            } catch (error) {
-                console.error('Все методы не сработали:', error);
-                
-                // Показываем подробную ошибку
-                document.getElementById('tableContainer').innerHTML = `
-                    <div class="error">
-                        <div style="font-size: 32px; margin-bottom: 16px;">⚠️</div>
-                        <div style="font-weight: bold; margin-bottom: 8px; font-size: 16px;">
-                            Ошибка загрузки
-                        </div>
-                        <div style="margin-bottom: 16px; font-size: 14px; font-family: monospace;">
-                            ${error.message}
-                        </div>
-                        <div style="font-size: 12px; opacity: 0.7; text-align: left;">
-                            <strong>Что делать:</strong><br>
-                            1. Проверьте, что таблица опубликована:<br>
-                               - Откройте таблицу<br>
-                               - Нажмите "Поделиться" → "Настройки доступа"<br>
-                               - Выберите "Доступно всем, у кого есть ссылка"<br><br>
-                            
-                            2. Получите ID таблицы из URL:<br>
-                               https://docs.google.com/spreadsheets/d/<strong>ЭТО_ВАШ_ID</strong>/edit<br><br>
-                            
-                            3. (Опционально) Получите API ключ:<br>
-                               - Зайдите на <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a><br>
-                               - Создайте проект → Включите Google Sheets API<br>
-                               - Создайте API ключ в "Credentials"<br>
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('stats').textContent = 'Ошибка загрузки данных';
-                
-            } finally {
-                setLoading(false);
-            }
-        }
+        // Загружаем таблицу при открытии
+        loadTable();
         
-        // Остальные функции (renderTable, escapeHtml, formatTime, updateLastUpdateTime, setLoading)
-        // остаются такими же, как в предыдущем варианте
-        
-        function formatTime(date) {
-            return date.toLocaleTimeString('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-        }
-        
-        function updateLastUpdateTime() {
-            const now = new Date();
-            lastLoaded = now;
-            document.getElementById('lastUpdate').textContent = 
-                `Обновлено: ${formatTime(now)}`;
-        }
-        
-        function setLoading(state) {
-            isLoading = state;
-            const btn = document.getElementById('refreshBtn');
-            const text = document.getElementById('refreshText');
-            
-            if (state) {
-                btn.disabled = true;
-                text.innerHTML = '⏳ Загрузка...';
-                document.getElementById('loading').style.display = 'block';
-            } else {
-                btn.disabled = false;
-                text.innerHTML = '🔄 Обновить';
-                document.getElementById('loading').style.display = 'none';
-            }
-        }
-        
-        function renderTable(rows) {
-            const container = document.getElementById('tableContainer');
-            
-            if (!rows || rows.length < 2) {
-                container.innerHTML = '<div class="error">Недостаточно данных для отображения</div>';
-                return;
-            }
-            
-            let html = '<table>';
-            
-            // Заголовок
-            html += '<thead><tr>';
-            rows[0].forEach((header, index) => {
-                const cleanHeader = header.trim() || `Колонка ${index + 1}`;
-                html += `<th>${escapeHtml(cleanHeader)}</th>`;
-            });
-            html += '</tr></thead><tbody>';
-            
-            // Данные
-            for (let i = 1; i < rows.length; i++) {
-                html += '<tr>';
-                rows[i].forEach((cell, cellIndex) => {
-                    let cellContent = escapeHtml(cell || '');
-                    
-                    if (cellContent.startsWith('http://') || cellContent.startsWith('https://')) {
-                        cellContent = `<a href="${cell}" target="_blank">${cellContent}</a>`;
-                    }
-                    
-                    if (cellContent.includes('@') && cellContent.includes('.') && !cellContent.includes(' ')) {
-                        cellContent = `<a href="mailto:${cell}">${cellContent}</a>`;
-                    }
-                    
-                    html += `<td>${cellContent}</td>`;
-                });
-                html += '</tr>';
-            }
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-        
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        // Инициализация
-        document.addEventListener('DOMContentLoaded', () => {
-            // Показываем панель конфигурации только админу
-            if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id == CONFIG.ADMIN_ID) {
-                document.getElementById('editBtn').style.display = 'block';
-                document.getElementById('configPanel').style.display = 'block';
-                
-                // Заполняем поля из localStorage
-                document.getElementById('sheetIdInput').value = CONFIG.SHEET_ID;
-                document.getElementById('apiKeyInput').value = CONFIG.API_KEY;
-                document.getElementById('sheetNameInput').value = CONFIG.SHEET_NAME;
-            }
-            
-            // Если есть настройки, загружаем данные
-            if (CONFIG.SHEET_ID) {
-                loadTableData();
-            } else {
-                testWithSampleData(); // Показываем пример
-            }
-            
-            // Автообновление
-            if (CONFIG.AUTO_REFRESH > 0) {
-                setInterval(() => {
-                    if (!isLoading && document.visibilityState === 'visible' && CONFIG.SHEET_ID) {
-                        loadTableData();
-                    }
-                }, CONFIG.AUTO_REFRESH * 1000);
-            }
-        });
+        // Обновляем каждые 30 секунд
+        setInterval(loadTable, 30000);
     </script>
 </body>
 </html>
