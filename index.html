@@ -1,143 +1,472 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Таблица в Telegram</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { 
-            font-family: sans-serif; 
-            margin: 0; 
-            padding: 10px; 
-            background: var(--tg-theme-bg-color); 
-            color: var(--tg-theme-text-color); 
+        :root {
+            --primary-color: #0088cc;
+            --border-color: #e0e0e0;
+            --hover-bg: rgba(0, 136, 204, 0.05);
         }
-        .admin-btn { 
-            display: none; 
-            background: #0088cc; 
-            color: white; 
-            padding: 10px; 
-            text-decoration: none; 
-            border-radius: 8px; 
-            text-align: center; 
-            margin-bottom: 10px; 
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            line-height: 1.4;
+            font-size: 14px;
         }
+        
+        .header {
+            margin-bottom: 20px;
+        }
+        
+        .admin-btn {
+            display: none;
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            text-decoration: none;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        
+        .admin-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+        
+        .refresh-btn {
+            background: var(--tg-theme-button-color, var(--primary-color));
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+            transition: background 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #0077b3;
+        }
+        
+        .refresh-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .last-update {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #888888);
+            text-align: right;
+            flex: 1;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            margin-bottom: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 14px;
+            min-width: 500px;
         }
-        th, td {
-            border: 1px solid var(--tg-theme-hint-color, #ddd);
-            padding: 8px 10px;
-            text-align: left;
-        }
-        th {
-            background-color: var(--tg-theme-secondary-bg-color, #f2f2f2);
-            font-weight: bold;
+        
+        thead {
             position: sticky;
             top: 0;
+            z-index: 10;
         }
-        tr:nth-child(even) {
-            background-color: var(--tg-theme-secondary-bg-color, #f9f9f9);
+        
+        th {
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            font-weight: 600;
+            padding: 16px 12px;
+            text-align: left;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 14px;
+            white-space: nowrap;
         }
+        
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--tg-theme-bg-color, #ffffff);
+            word-break: break-word;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover td {
+            background: var(--hover-bg);
+        }
+        
         .loading {
+            padding: 60px 20px;
             text-align: center;
-            padding: 20px;
-            color: var(--tg-theme-hint-color);
+            color: var(--tg-theme-hint-color, #888888);
         }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 136, 204, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         .error {
-            color: #ff4444;
-            padding: 20px;
+            padding: 40px 20px;
             text-align: center;
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.05);
+            border-radius: 12px;
+            margin: 20px 0;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+        }
+        
+        .stats {
+            text-align: center;
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #888888);
+            padding: 12px;
+            border-top: 1px solid var(--border-color);
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+        }
+        
+        /* Стили для ссылок в таблице */
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+            word-break: break-all;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+                font-size: 13px;
+            }
+            
+            th, td {
+                padding: 12px 8px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .refresh-btn, .last-update {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        
+        /* Темная тема */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --border-color: #333333;
+                --hover-bg: rgba(0, 136, 204, 0.1);
+            }
         }
     </style>
 </head>
 <body>
-    <a id="editBtn" href="ССЫЛКА_НА_ВАШУ_ТАБЛИЦУ_ДЛЯ_РЕДАКТИРОВАНИЯ" class="admin-btn">Редактировать таблицу</a>
+    <div class="header">
+        <a id="editBtn" href="ССЫЛКА_НА_ВАШУ_ТАБЛИЦУ_ДЛЯ_РЕДАКТИРОВАНИЯ" class="admin-btn">
+            ✏️ Редактировать таблицу
+        </a>
+        
+        <div class="controls">
+            <button onclick="loadTableData()" class="refresh-btn" id="refreshBtn">
+                <span id="refreshText">🔄 Обновить</span>
+            </button>
+            <div class="last-update" id="lastUpdate">
+                Загрузка...
+            </div>
+        </div>
+    </div>
     
-    <div id="table-container"></div>
+    <div class="table-container" id="tableContainer">
+        <div class="loading" id="loading">
+            <span class="loading-spinner"></span> Загрузка данных...
+        </div>
+    </div>
+    
+    <div class="stats" id="stats"></div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        const MY_ID = 517194795;
+        // === КОНФИГУРАЦИЯ ===
+        const CONFIG = {
+            // Получите ID таблицы из URL: https://docs.google.com/spreadsheets/d/ВАШ_ID/edit
+            SHEET_ID: 'https://docs.google.com/spreadsheets/d/1013rhkCZ-xFHPzWgrB-RICCkJkXYhOq-wZPBUZUzTV8/edit?usp=sharing',
+            
+            // Получите API ключ: https://console.cloud.google.com/apis/credentials
+            API_KEY: 'AIzaSyDd9JykitTR1w7mtbN5iT6vvyOL18VxjSM',
+            
+            // Имя листа (по умолчанию 'Sheet1')
+            SHEET_NAME: 'Sheet1',
+            
+            // Ваш Telegram ID для админ-доступа
+            ADMIN_ID: 517194795,
+            
+            // Автообновление в секундах (0 - отключено)
+            AUTO_REFRESH: 60
+        };
+        // === КОНЕЦ КОНФИГУРАЦИИ ===
         
-        // URL вашего Google Sheets в формате CSV (публичный доступ)
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1013rhkCZ-xFHPzWgrB-RICCkJkXYhOq-wZPBUZUzTV8/edit?usp=sharing';
-
-        function renderTable(csvData) {
-            const rows = csvData.trim().split('\n');
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        // Глобальные переменные
+        let isLoading = false;
+        let lastLoaded = null;
+        
+        // Функция форматирования времени
+        function formatTime(date) {
+            return date.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+        
+        // Обновление времени последней загрузки
+        function updateLastUpdateTime() {
+            const now = new Date();
+            lastLoaded = now;
+            document.getElementById('lastUpdate').textContent = 
+                `Обновлено: ${formatTime(now)}`;
+        }
+        
+        // Показ/скрытие загрузки
+        function setLoading(state) {
+            isLoading = state;
+            const btn = document.getElementById('refreshBtn');
+            const text = document.getElementById('refreshText');
+            
+            if (state) {
+                btn.disabled = true;
+                text.innerHTML = '⏳ Загрузка...';
+                document.getElementById('loading').style.display = 'block';
+            } else {
+                btn.disabled = false;
+                text.innerHTML = '🔄 Обновить';
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        // Основная функция загрузки данных
+        async function loadTableData() {
+            if (isLoading) return;
+            
+            setLoading(true);
+            
+            try {
+                // Формируем URL для Google Sheets API
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${CONFIG.SHEET_NAME}?key=${CONFIG.API_KEY}`;
+                
+                console.log('Загрузка данных из:', url);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Ошибка ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.values || data.values.length === 0) {
+                    throw new Error('Таблица пуста или не найдена');
+                }
+                
+                // Отображаем таблицу
+                renderTable(data.values);
+                updateLastUpdateTime();
+                
+                // Показываем статистику
+                document.getElementById('stats').textContent = 
+                    `Загружено: ${data.values.length - 1} строк, ${data.values[0].length} колонок`;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                
+                let errorMessage = 'Неизвестная ошибка';
+                
+                if (error.message.includes('404')) {
+                    errorMessage = 'Таблица не найдена. Проверьте SHEET_ID';
+                } else if (error.message.includes('403')) {
+                    errorMessage = 'Доступ запрещен. Проверьте API_KEY и доступ к таблице';
+                } else if (error.message.includes('Сеть')) {
+                    errorMessage = 'Проблема с интернет-соединением';
+                } else {
+                    errorMessage = error.message;
+                }
+                
+                document.getElementById('tableContainer').innerHTML = `
+                    <div class="error">
+                        <div style="font-size: 32px; margin-bottom: 16px;">⚠️</div>
+                        <div style="font-weight: bold; margin-bottom: 8px; font-size: 16px;">
+                            Ошибка загрузки
+                        </div>
+                        <div style="margin-bottom: 16px; font-size: 14px;">
+                            ${errorMessage}
+                        </div>
+                        <div style="font-size: 12px; opacity: 0.7;">
+                            Проверьте:<br>
+                            1. Правильность SHEET_ID и API_KEY<br>
+                            2. Таблица опубликована для всех<br>
+                            3. Google Sheets API включен
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('stats').textContent = 
+                    'Ошибка загрузки данных';
+                    
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // Функция отрисовки таблицы
+        function renderTable(rows) {
+            const container = document.getElementById('tableContainer');
+            
+            if (!rows || rows.length < 2) {
+                container.innerHTML = '<div class="error">Недостаточно данных для отображения</div>';
+                return;
+            }
+            
             let html = '<table>';
             
-            rows.forEach((row, rowIndex) => {
-                const cells = row.split(',').map(cell => 
-                    cell.replace(/^"(.*)"$/, '$1').trim()
-                );
-                
-                if (rowIndex === 0) {
-                    // Заголовок таблицы
-                    html += '<thead><tr>';
-                    cells.forEach(cell => {
-                        html += `<th>${cell}</th>`;
-                    });
-                    html += '</tr></thead><tbody>';
-                } else {
-                    // Строки данных
-                    html += '<tr>';
-                    cells.forEach(cell => {
-                        html += `<td>${cell}</td>`;
-                    });
-                    html += '</tr>';
+            // Заголовок таблицы
+            html += '<thead><tr>';
+            rows[0].forEach((header, index) => {
+                // Убираем лишние пробелы и делаем первую букву заглавной
+                const cleanHeader = header.trim() || `Колонка ${index + 1}`;
+                html += `<th>${cleanHeader}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            // Данные таблицы
+            for (let i = 1; i < rows.length; i++) {
+                html += '<tr>';
+                rows[i].forEach((cell, cellIndex) => {
+                    let cellContent = escapeHtml(cell || '');
+                    
+                    // Автоматическое определение ссылок
+                    if (cellContent.startsWith('http://') || cellContent.startsWith('https://')) {
+                        cellContent = `<a href="${cellContent}" target="_blank">${cellContent}</a>`;
+                    }
+                    
+                    // Автоматическое определение email
+                    if (cellContent.includes('@') && cellContent.includes('.') && !cellContent.includes(' ')) {
+                        cellContent = `<a href="mailto:${cellContent}">${cellContent}</a>`;
+                    }
+                    
+                    html += `<td>${cellContent}</td>`;
+                });
+                html += '</tr>';
+            }
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        // Экранирование HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            // Проверка прав администратора
+            if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id == CONFIG.ADMIN_ID) {
+                document.getElementById('editBtn').style.display = 'block';
+            }
+            
+            // Загружаем данные при открытии
+            loadTableData();
+            
+            // Настраиваем автообновление
+            if (CONFIG.AUTO_REFRESH > 0) {
+                setInterval(() => {
+                    if (!isLoading && document.visibilityState === 'visible') {
+                        loadTableData();
+                    }
+                }, CONFIG.AUTO_REFRESH * 1000);
+            }
+            
+            // Обновление при возвращении на вкладку
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && 
+                    lastLoaded && 
+                    (Date.now() - lastLoaded.getTime()) > 300000) { // 5 минут
+                    loadTableData();
                 }
             });
             
-            html += '</tbody></table>';
-            document.getElementById('table-container').innerHTML = html;
-        }
-
-        async function loadTableData() {
-            const container = document.getElementById('table-container');
-            container.innerHTML = '<div class="loading">Загрузка данных...</div>';
+            // Pull-to-refresh (для мобильных)
+            let touchStartY = 0;
+            document.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
             
-            try {
-                // Используем CORS прокси если нужно (GitHub Pages может блокировать запросы)
-                const proxyUrl = 'https://corsproxy.io/?';
-                const response = await fetch(proxyUrl + encodeURIComponent(SHEET_URL));
+            document.addEventListener('touchend', (e) => {
+                const touchEndY = e.changedTouches[0].clientY;
+                const deltaY = touchStartY - touchEndY;
                 
-                if (!response.ok) throw new Error(`Ошибка загрузки: ${response.status}`);
-                
-                const csvText = await response.text();
-                renderTable(csvText);
-            } catch (error) {
-                console.error('Ошибка:', error);
-                container.innerHTML = '<div class="error">Не удалось загрузить таблицу. Проверьте доступность данных.</div>';
-            }
-        }
-
-        // Проверка прав администратора
-        if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === MY_ID) {
-            document.getElementById('editBtn').style.display = 'block';
-        }
-        
-        // Загружаем таблицу
-        loadTableData();
-        
-        // Обновляем данные каждые 30 секунд
-        setInterval(loadTableData, 30000);
-        
-        tg.expand();
-        
-        // Добавляем обработчик обновления свайпом вниз
-        let startY;
-        document.addEventListener('touchstart', (e) => {
-            startY = e.touches[0].clientY;
-        });
-        
-        document.addEventListener('touchend', (e) => {
-            const endY = e.changedTouches[0].clientY;
-            if (startY - endY > 100) { // Свайп вниз > 100px
-                loadTableData();
-            }
+                // Если свайп вниз больше 100px и в начале страницы
+                if (deltaY > 100 && window.scrollY === 0) {
+                    loadTableData();
+                }
+            }, { passive: true });
         });
     </script>
 </body>
