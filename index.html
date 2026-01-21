@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 10px; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+        iframe { width: 100%; height: 80vh; border: none; }
+        .admin-btn { display: none; background: #0088cc; color: white; padding: 10px; text-decoration: none; border-radius: 8px; text-align: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <!-- Ссылка для вас, чтобы быстро перейти к редактированию -->
+    <a id="editBtn" href="ССЫЛКА_НА_ВАШУ_ТАБЛИЦУ_ДЛЯ_РЕДАКТИРОВАНИЯ" class="admin-btn">Редактировать таблицу</a>
+
+    <!-- Отображение таблицы для всех -->
+    <iframe src="https://docs.google.com/spreadsheets/d/1013rhkCZ-xFHPzWgrB-RICCkJkXYhOq-wZPBUZUzTV8/edit?usp=drivesdk"></iframe>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const MY_ID = 517194795;
+
+        if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === MY_ID) {
+            document.getElementById('editBtn').style.display = 'block';
+        }
+        tg.expand();
+    </script>
+</body>
+</html>
+
+*Замените ВАШ_ID_ИЗ_ШАГА_2, ССЫЛКА_ИЗ_ШАГА_1 и ссылку на саму таблицу в коде.*
