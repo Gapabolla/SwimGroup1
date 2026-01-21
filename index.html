@@ -32,7 +32,7 @@
         
         iframe {
             width: 100%;
-            height: calc(85vh - 60px); /* Уменьшаем высоту под заголовок */
+            height: 400px;
             border: none;
             border-radius: 0 0 12px 12px;
         }
@@ -41,6 +41,8 @@
             text-align: center;
             padding: 40px;
             color: var(--tg-theme-hint-color, #666);
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 0 0 12px 12px;
         }
         
         .info-text {
@@ -51,7 +53,7 @@
             padding: 8px;
         }
         
-        /* Стили для заголовка */
+        /* Стили для заголовков */
         .table-header {
             background: var(--tg-theme-secondary-bg-color, #f8f9fa);
             padding: 15px;
@@ -69,6 +71,44 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
+        
+        /* Навигация между таблицами */
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .tab.active {
+            background: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Вертикальный вариант */
+        .tabs-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -82,57 +122,165 @@
         📄 Отправить квитанцию
     </a>
     
-    <!-- Контейнер с заголовком и таблицей -->
+    <!-- Вариант 1: Все три таблицы сразу -->
+    
+    <!-- 1. Посещение (Лист 1) -->
     <div class="table-container-wrapper">
         <div class="table-header">
             📊 Посещение
         </div>
-        
-        <!-- Таблица -->
-        <div id="table-container">
-            <div class="loading">Загрузка таблицы...</div>
+        <div id="table-container-1" class="table-content">
+            <div class="loading">Загрузка таблицы Посещение...</div>
+        </div>
+    </div>
+    
+    <!-- 2. Нет чеков за месяц (Лист 2) -->
+    <div class="table-container-wrapper">
+        <div class="table-header">
+            ❌ Нет чеков за месяц
+        </div>
+        <div id="table-container-2" class="table-content">
+            <div class="loading">Загрузка таблицы Нет чеков за месяц...</div>
+        </div>
+    </div>
+    
+    <!-- 3. Акулята (Лист 3) -->
+    <div class="table-container-wrapper">
+        <div class="table-header">
+            🐟 Акулята
+        </div>
+        <div id="table-container-3" class="table-content">
+            <div class="loading">Загрузка таблицы Акулята...</div>
         </div>
     </div>
 
     <script>
-        // Ваша таблица
-        const TABLE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq/pubhtml?gid=0&single=true";
+        // URL вашей основной таблицы
+        const SHEET_ID = "2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq";
+        
+        // URL для разных листов
+        const TABLES = {
+            "attendance": { // Лист 1 - Посещение
+                title: "📊 Посещение",
+                url: `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pubhtml?gid=0&single=true`,
+                containerId: "table-container-1"
+            },
+            "no-receipts": { // Лист 2 - Нет чеков за месяц
+                title: "❌ Нет чеков за месяц", 
+                url: `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pubhtml?gid=1&single=true`,
+                containerId: "table-container-2"
+            },
+            "sharks": { // Лист 3 - Акулята
+                title: "🐟 Акулята",
+                url: `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pubhtml?gid=2&single=true`,
+                containerId: "table-container-3"
+            }
+        };
         
         // Инициализация Telegram
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
         
-        // Загружаем таблицу
-        function loadTable() {
-            const container = document.getElementById('table-container');
-            const optimizedUrl = TABLE_URL + 
+        // Функция загрузки таблицы
+        function loadTable(tableKey) {
+            const table = TABLES[tableKey];
+            const container = document.getElementById(table.containerId);
+            
+            if (!container) return;
+            
+            const optimizedUrl = table.url + 
                 '&rm=minimal&widget=false&headers=false&chrome=false';
+            
+            // Проверяем, не загружена ли уже таблица
+            if (container.querySelector('iframe')) {
+                console.log(`Таблица ${table.title} уже загружена`);
+                return;
+            }
             
             const iframe = document.createElement('iframe');
             iframe.src = optimizedUrl;
             iframe.loading = "lazy";
+            iframe.style.height = "400px";
             
             container.innerHTML = '';
             container.appendChild(iframe);
             
-            // Скрываем загрузку через 2 секунды
+            // Скрываем loader через 2 секунды
             setTimeout(() => {
-                const loadingDiv = document.querySelector('.loading');
+                const loadingDiv = container.querySelector('.loading');
                 if (loadingDiv) loadingDiv.style.display = 'none';
             }, 2000);
+            
+            // Обработка ошибок
+            iframe.onerror = function() {
+                container.innerHTML = '<div class="loading">Ошибка загрузки таблицы</div>';
+            };
+        }
+        
+        // Загружаем все таблицы при запуске
+        function loadAllTables() {
+            Object.keys(TABLES).forEach(tableKey => {
+                loadTable(tableKey);
+            });
+        }
+        
+        // Альтернатива: загружаем по очереди с задержкой
+        function loadTablesSequentially() {
+            const tableKeys = Object.keys(TABLES);
+            
+            function loadNext(index) {
+                if (index >= tableKeys.length) return;
+                
+                loadTable(tableKeys[index]);
+                
+                // Загружаем следующую таблицу через 0.5 секунды
+                setTimeout(() => {
+                    loadNext(index + 1);
+                }, 500);
+            }
+            
+            loadNext(0);
         }
         
         // Запускаем при загрузке страницы
-        document.addEventListener('DOMContentLoaded', loadTable);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllTables(); // или loadTablesSequentially()
+        });
         
         // Автообновление каждые 5 минут
         setInterval(() => {
             if (document.visibilityState === 'visible') {
-                const iframe = document.querySelector('iframe');
-                if (iframe) iframe.src = iframe.src;
+                Object.keys(TABLES).forEach(tableKey => {
+                    const container = document.getElementById(TABLES[tableKey].containerId);
+                    const iframe = container ? container.querySelector('iframe') : null;
+                    if (iframe) {
+                        iframe.src = iframe.src;
+                    }
+                });
             }
         }, 300000);
+        
+        // Функция для обновления конкретной таблицы
+        function refreshTable(tableKey) {
+            const table = TABLES[tableKey];
+            const container = document.getElementById(table.containerId);
+            const iframe = container ? container.querySelector('iframe') : null;
+            
+            if (iframe) {
+                // Показываем загрузку
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'loading';
+                loadingDiv.textContent = `Обновление ${table.title}...`;
+                container.innerHTML = '';
+                container.appendChild(loadingDiv);
+                
+                // Загружаем заново через 0.5 секунды
+                setTimeout(() => {
+                    loadTable(tableKey);
+                }, 500);
+            }
+        }
     </script>
 </body>
 </html>
