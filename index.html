@@ -12,8 +12,8 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
-        .admin-btn {
-            display: none;
+        .contact-btn {
+            display: block;
             background: var(--tg-theme-button-color, #0088cc);
             color: var(--tg-theme-button-text-color, #ffffff);
             padding: 12px;
@@ -22,13 +22,14 @@
             text-align: center;
             margin-bottom: 15px;
             font-weight: 500;
+            font-size: 16px;
+            transition: opacity 0.2s;
         }
         
-        .admin-btn:hover {
+        .contact-btn:hover {
             opacity: 0.9;
         }
         
-        /* Оптимизируем iframe */
         iframe {
             width: 100%;
             height: 85vh;
@@ -36,107 +37,76 @@
             border-radius: 12px;
         }
         
-        /* Скрываем лишние элементы Google Sheets */
-        .table-container {
-            overflow: hidden;
-            position: relative;
-        }
-        
-        /* Улучшаем загрузку */
         .loading {
             text-align: center;
             padding: 40px;
             color: var(--tg-theme-hint-color, #666);
         }
+        
+        .info-text {
+            text-align: center;
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #888);
+            margin-bottom: 10px;
+            padding: 8px;
+        }
     </style>
 </head>
 <body>
-    <!-- Кнопка редактирования для админа -->
-    <a id="editBtn" href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq/edit" 
-       class="admin-btn" target="_blank">
-       ✏️ Редактировать таблицу
+    <!-- Информационный текст -->
+    <div class="info-text">
+        Нажмите кнопку ниже для отправки квитанции
+    </div>
+    
+    <!-- Кнопка связи -->
+    <a href="#" onclick="tg.openTelegramLink('https://t.me/semen_prozorov')" class="contact-btn">
+        📄 Отправить квитанцию
     </a>
     
-    <!-- Контейнер для таблицы -->
+    <!-- Таблица -->
     <div id="table-container">
         <div class="loading">Загрузка таблицы...</div>
     </div>
 
     <script>
-        // === НАСТРОЙКИ ===
-        const ADMIN_ID = 517194795; // ВАШ Telegram ID
-        
-        // Полная ссылка на таблицу
+        // Ваша таблица
         const TABLE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq/pubhtml?gid=0&single=true";
         
-        // Ссылка для редактирования
-        const EDIT_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq/edit";
-        
-        // === КОД ===
+        // Инициализация Telegram
         const tg = window.Telegram.WebApp;
-        
-        // Расширяем на весь экран
         tg.expand();
         tg.ready();
         
-        // Проверяем, админ ли это
-        if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id == ADMIN_ID) {
-            document.getElementById('editBtn').style.display = 'block';
-            document.getElementById('editBtn').href = EDIT_URL;
-        }
-        
-        // Функция загрузки таблицы
+        // Загружаем таблицу
         function loadTable() {
             const container = document.getElementById('table-container');
-            
-            // Создаем оптимизированный iframe
-            const iframe = document.createElement('iframe');
-            
-            // Добавляем параметры для ускорения и чистоты
             const optimizedUrl = TABLE_URL + 
-                '&rm=minimal' +     // Минимальный интерфейс
-                '&widget=false' +   // Без виджетов
-                '&headers=false' +  // Без заголовков Google
-                '&chrome=false';    // Без хрома
+                '&rm=minimal&widget=false&headers=false&chrome=false';
             
+            const iframe = document.createElement('iframe');
             iframe.src = optimizedUrl;
-            iframe.loading = "lazy"; // Ленивая загрузка
+            iframe.loading = "lazy";
             
-            // Очищаем контейнер и добавляем iframe
             container.innerHTML = '';
             container.appendChild(iframe);
             
-            // Скрываем loader через 2 секунды
+            // Скрываем загрузку через 2 секунды
             setTimeout(() => {
                 const loadingDiv = document.querySelector('.loading');
-                if (loadingDiv) {
-                    loadingDiv.style.display = 'none';
-                }
+                if (loadingDiv) loadingDiv.style.display = 'none';
             }, 2000);
         }
         
-        // Загружаем таблицу при открытии
+        // Запускаем при загрузке страницы
         document.addEventListener('DOMContentLoaded', loadTable);
         
-        // Автообновление каждые 60 секунд
+        // Автообновление каждые 5 минут
         setInterval(() => {
             if (document.visibilityState === 'visible') {
                 const iframe = document.querySelector('iframe');
-                if (iframe) {
-                    iframe.src = iframe.src; // Перезагружаем
-                }
+                if (iframe) iframe.src = iframe.src;
             }
-        }, 60000);
-        
-        // Обновление при возвращении на вкладку
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                const iframe = document.querySelector('iframe');
-                if (iframe) {
-                    iframe.src = iframe.src;
-                }
-            }
-        });
+        }, 300000);
     </script>
 </body>
 </html>
