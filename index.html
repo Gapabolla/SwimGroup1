@@ -5,105 +5,138 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
             padding: 10px;
-            background: #ffffff;
-            color: #000000;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
         .admin-btn {
             display: none;
-            background: #0088cc;
-            color: white;
-            padding: 10px;
+            background: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            padding: 12px;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 10px;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            font-weight: 500;
         }
         
-        table {
+        .admin-btn:hover {
+            opacity: 0.9;
+        }
+        
+        /* Оптимизируем iframe */
+        iframe {
             width: 100%;
-            border-collapse: collapse;
+            height: 85vh;
+            border: none;
+            border-radius: 12px;
         }
         
-        th {
-            background: #f0f0f0;
-            padding: 12px 8px;
-            text-align: left;
-            border-bottom: 2px solid #ddd;
-            position: sticky;
-            top: 0;
+        /* Скрываем лишние элементы Google Sheets */
+        .table-container {
+            overflow: hidden;
+            position: relative;
         }
         
-        td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        tr:hover {
-            background: #f9f9f9;
-        }
-        
+        /* Улучшаем загрузку */
         .loading {
             text-align: center;
             padding: 40px;
-            color: #666;
+            color: var(--tg-theme-hint-color, #666);
         }
     </style>
 </head>
 <body>
-    <a id="editBtn" href="#" class="admin-btn">✏️ Редактировать таблицу</a>
+    <!-- Кнопка редактирования для админа -->
+    <a id="editBtn" href="https://docs.google.com/spreadsheets/d/e/2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq/edit" 
+       class="admin-btn" target="_blank">
+       ✏️ Редактировать таблицу
+    </a>
     
+    <!-- Контейнер для таблицы -->
     <div id="table-container">
         <div class="loading">Загрузка таблицы...</div>
     </div>
 
     <script>
-        // === ПРОСТАЯ НАСТРОЙКА ===
-        const SHEET_ID = 'ВСТАВЬТЕ_СЮДА_ID_ТАБЛИЦЫ';
-        const ADMIN_ID = 123456789; // Ваш Telegram ID
+        // === НАСТРОЙКИ ===
+        const ADMIN_ID = 517194795; // ВАШ Telegram ID
         
-        // Инициализация Telegram
+        // Полная ссылка на таблицу
+        const TABLE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq/pubhtml?gid=0&single=true";
+        
+        // Ссылка для редактирования
+        const EDIT_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq/edit";
+        
+        // === КОД ===
         const tg = window.Telegram.WebApp;
-        tg.expand();
         
-        // Загружаем таблицу
-        function loadTable() {
-            // Google Sheets URL для публичного доступа
-            const url = `https://docs.google.com/spreadsheets/d/1013rhkCZ-xFHPzWgrB-RICCkJkXYhOq-wZPBUZUzTV8/edit?usp=sharing`;
-            
-            fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    // Вырезаем только таблицу из ответа
-                    const tableMatch = html.match(/<table[^>]*>[\s\S]*?<\/table>/i);
-                    if (tableMatch) {
-                        document.getElementById('table-container').innerHTML = tableMatch[0];
-                    } else {
-                        document.getElementById('table-container').innerHTML = 
-                            '<div class="loading">Не удалось загрузить таблицу</div>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка:', error);
-                    document.getElementById('table-container').innerHTML = 
-                        '<div class="loading">Ошибка загрузки. Проверьте ID таблицы</div>';
-                });
+        // Расширяем на весь экран
+        tg.expand();
+        tg.ready();
+        
+        // Проверяем, админ ли это
+        if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id == ADMIN_ID) {
+            document.getElementById('editBtn').style.display = 'block';
+            document.getElementById('editBtn').href = EDIT_URL;
         }
         
-        // Проверяем админа
-        if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === ADMIN_ID) {
-            document.getElementById('editBtn').style.display = 'block';
-            document.getElementById('editBtn').href = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
+        // Функция загрузки таблицы
+        function loadTable() {
+            const container = document.getElementById('table-container');
+            
+            // Создаем оптимизированный iframe
+            const iframe = document.createElement('iframe');
+            
+            // Добавляем параметры для ускорения и чистоты
+            const optimizedUrl = TABLE_URL + 
+                '&rm=minimal' +     // Минимальный интерфейс
+                '&widget=false' +   // Без виджетов
+                '&headers=false' +  // Без заголовков Google
+                '&chrome=false';    // Без хрома
+            
+            iframe.src = optimizedUrl;
+            iframe.loading = "lazy"; // Ленивая загрузка
+            
+            // Очищаем контейнер и добавляем iframe
+            container.innerHTML = '';
+            container.appendChild(iframe);
+            
+            // Скрываем loader через 2 секунды
+            setTimeout(() => {
+                const loadingDiv = document.querySelector('.loading');
+                if (loadingDiv) {
+                    loadingDiv.style.display = 'none';
+                }
+            }, 2000);
         }
         
         // Загружаем таблицу при открытии
-        loadTable();
+        document.addEventListener('DOMContentLoaded', loadTable);
         
-        // Обновляем каждые 30 секунд
-        setInterval(loadTable, 30000);
+        // Автообновление каждые 60 секунд
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                const iframe = document.querySelector('iframe');
+                if (iframe) {
+                    iframe.src = iframe.src; // Перезагружаем
+                }
+            }
+        }, 60000);
+        
+        // Обновление при возвращении на вкладку
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                const iframe = document.querySelector('iframe');
+                if (iframe) {
+                    iframe.src = iframe.src;
+                }
+            }
+        });
     </script>
 </body>
 </html>
