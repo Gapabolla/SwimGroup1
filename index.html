@@ -49,6 +49,7 @@
             cursor: pointer;
             font-weight: 500;
             transition: background 0.2s;
+            user-select: none;
         }
 
         .tab.active {
@@ -71,15 +72,22 @@
         Нажмите кнопку ниже для отправки квитанции
     </div>
 
-    <a href="#" class="contact-btn"
+    <a href="#"
+       class="contact-btn"
        onclick="tg.openTelegramLink('https://t.me/semen_prozorov')">
         📄 Отправить квитанцию
     </a>
 
     <div class="tabs">
-        <div class="tab active" onclick="switchSheet(0)">📊 Посещение</div>
-        <div class="tab" onclick="switchSheet(1)">❌ Нет чеков</div>
-        <div class="tab" onclick="switchSheet(2)">🐟 Акулята</div>
+        <div class="tab active" onclick="switchSheet('attendance', this)">
+            📊 Посещение
+        </div>
+        <div class="tab" onclick="switchSheet('noReceipts', this)">
+            ❌ Нет чеков
+        </div>
+        <div class="tab" onclick="switchSheet('sharks', this)">
+            🐟 Акулята
+        </div>
     </div>
 
     <iframe id="sheetFrame"></iframe>
@@ -92,8 +100,16 @@
         // ID опубликованной Google Таблицы
         const SHEET_ID = "2PACX-1vRfKiesPxaRYiHMfRNT1NYa7H3th912IHJ1t2Mqt71Ht6oTXbyscLAQbtPzv7W3OrvuCy5qqYfS3Noq";
 
-        function switchSheet(gid) {
+        // Реальные gid листов
+        const SHEETS = {
+            attendance: 0,          // 1 лист
+            noReceipts: 513068483,  // 2 лист
+            sharks: 207736853       // 3 лист
+        };
+
+        function switchSheet(key, tabElement) {
             const iframe = document.getElementById("sheetFrame");
+            const gid = SHEETS[key];
 
             iframe.src =
                 `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pubhtml` +
@@ -103,11 +119,11 @@
                 tab.classList.remove('active');
             });
 
-            document.querySelectorAll('.tab')[gid].classList.add('active');
+            tabElement.classList.add('active');
         }
 
-        // Загружаем первый лист при открытии
-        switchSheet(0);
+        // Загружаем первый лист при открытии WebApp
+        switchSheet('attendance', document.querySelector('.tab.active'));
 
         // Автообновление каждые 5 минут (если WebApp активен)
         setInterval(() => {
